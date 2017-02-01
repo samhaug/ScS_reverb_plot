@@ -5,6 +5,15 @@ from mpl_toolkits.basemap import Basemap, cm
 import matplotlib.pyplot as plt
 import obspy
 import glob
+from subprocess import call
+
+'''
+Plots a mapview of all china stations. It references a folder with
+pk files that have been sorted into their networks
+'''
+
+pk_file = '/home/samhaug/work1/ScS_reverb_data/20160130/*.pk'
+
 
 fig,ax = plt.subplots(figsize=(18,18))
 #ax = fig.add_axes([0.1,0.1,0.8,0.8])
@@ -18,8 +27,8 @@ m.drawcoastlines()
 #m.drawstates()
 m.drawcountries()
 
-for idx,ii in enumerate(glob.glob('*.pk')):
-    print str(idx)+'/'+str(len(glob.glob('*.pk')))
+for idx,ii in enumerate(glob.glob(pk_file)):
+    print str(idx)+'/'+str(len(glob.glob(pk_file)))
     st = obspy.read(ii)
     lons = []
     lats = []
@@ -31,4 +40,5 @@ for idx,ii in enumerate(glob.glob('*.pk')):
     m.scatter(x,y,5,marker='o',color=np.random.rand(3,1),label=net)
 plt.legend(ncol=4,loc=4)
 
-plt.show()
+plt.savefig('plot_china_stations.pdf')
+call('evince plot_china_stations.pdf',shell=True)

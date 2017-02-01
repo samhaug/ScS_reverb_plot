@@ -10,6 +10,7 @@ from subprocess import call
 '''
 Plots a mapview of all china stations. It references a folder with
 pk files that have been sorted into their networks
+Change directory by changing pk_file
 '''
 
 pk_file = '/home/samhaug/work1/ScS_reverb_data/20160130/*.pk'

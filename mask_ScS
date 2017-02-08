@@ -1,0 +1,109 @@
+#!/home/samhaug/anaconda2/bin/python
+
+import obspy
+import numpy as np
+import seispy
+from scipy.signal import tukey
+from obspy.taup import TauPyModel
+from matplotlib import pyplot as plt
+from os import listdir
+
+model = TauPyModel(model='prem')
+
+'''
+This script will strip everything but the zeroth-order reverberations
+from an AxiSEM synthetic.
+'''
+
+def find_ttimes(tr):
+    '''
+    Find the traveltimes of ScS reverberations for the 660
+    '''
+    gcarc = tr.stats.sac['gcarc']
+    evdp = tr.stats.sac['evdp']
+    time_d = {}
+    phase_list = [
+                  'ScSScS',
+                  'sScSScS',
+
+                  'ScSScSScS',
+                  'sScSScSScS',
+
+                  'ScSScSScSScS',
+                  'sScSScSScSScS',
+
+                  'ScSScSScSScSScS',
+                  'sScSScSScSScSScS',
+                 ]
+
+    arrivals = model.get_travel_times(source_depth_in_km=evdp,
+                                   distance_in_degree=gcarc,
+                                   phase_list = phase_list)
+    for i,j in enumerate(phase_list):
+        time_d[j] = arrivals[i].time
+
+    return time_d
+
+def strip_reverb(tr,time_d):
+    '''
+    Use a tukey window to mask an axisem
+    trace and only pass the reverberations
+    '''
+    sr = tr.stats.sampling_rate
+    npts = tr.stats.npts
+    masked_trace = tr.copy()
+
+    def make_mask(phase):
+        S = time_d[phase]
+        sS = time_d['s'+phase]
+        diff = int(abs(sS-S))
+        window = (S-5,S+2*diff+38)
+        t = tukey(int((window[1]-window[0])*sr),0.2)
+        start = np.zeros(int(window[0]*sr))
+        end = np.zeros(npts-int(window[1]*sr))
+        mask = np.hstack((start,t,end))
+        #plt.plot(tr.data*mask)
+        #plt.show()
+        if len(mask) > len(tr.data):
+            mask = mask[0:len(mask)-len(tr.data)]
+        if len(mask) < len(tr.data):
+            mask = np.hstack((mask,np.zeros(len(tr.data)-len(mask))))
+        return mask
+
+    m1 = make_mask('ScSScS')
+    m2 = make_mask('ScSScSScS')
+    m3 = make_mask('ScSScSScSScS')
+    #m4 = make_mask('ScSScSScSScSScS')
+    #plt.plot((m1+m2+m3)*tr.data,alpha=0.5)
+    #plt.plot(tr.data,alpha=0.5)
+    #plt.show()
+    masked_trace.data = (m1+m2+m3)*tr.data
+    return masked_trace
+
+data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+st_data = obspy.read(data_dir+'FJ_clean.pk')
+st_data.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+st_data.normalize()
+
+st_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/220_tar/'
+
+dir_list = listdir(st_dir)
+
+fig,ax = plt.subplots()
+
+for d in dir_list:
+    st = obspy.read(st_dir+d+'/st_T.pk')
+    st.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    st.integrate()
+    st.normalize()
+    #st = seispy.data.normalize_on_envelope(st)
+    time_d = find_ttimes(st[12])
+    mtrace = strip_reverb(st[12],time_d)
+    #ax.plot(mtrace.data,alpha=0.3)
+    ax.plot(st[2].data,alpha=0.3)
+    #seispy.plot.plot(st[2],phase_list=['ScSScS'])
+
+
+plt.show()
+
+

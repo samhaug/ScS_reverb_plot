@@ -8,14 +8,13 @@ from obspy.taup import TauPyModel
 from matplotlib import pyplot as plt
 from os import listdir
 from scipy.signal import correlate
+from scipy.signal import argrelextrema
 
-model = TauPyModel(model='prem')
 
 '''
-This script will strip everything but the zeroth-order reverberations
-from an AxiSEM synthetic.
-
-Use this script to find the optimum perturbed PREM model for ScS reverbs
+After you have found the best fit perturbed PREM model that explains
+the traveltimes of ScS_n, use this function to find the best event depth
+to explain depth phase separation.
 '''
 
 def find_ttimes(tr):
@@ -75,33 +74,68 @@ def strip_reverb(tr,time_d):
     masked_trace.data = (m1+m2+m3)*tr.data
     return masked_trace
 
-data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
-st_data = obspy.read(data_dir+'FJ_clean.pk')
-st_data.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
-st_data = seispy.data.normalize_on_envelope(st_data)
-st_data = seispy.data.align_on_phase(st_data,phase=['ScSScS'],a_min=False)
-data_tr = seispy.data.phase_window(st_data[12],['ScSScS'],window=(-10,2050))
-data_tr.interpolate(1)
+def setup_data(data_dir,st_ind):
+    st_data = obspy.read(data_dir+'FJ_clean.pk')
+    st_data.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    st_data = seispy.data.normalize_on_envelope(st_data)
+    st_data = seispy.data.align_on_phase(st_data,phase=['ScSScS'],a_min=False)
+    data_tr = seispy.data.phase_window(st_data[st_ind],['ScSScS'],window=(-10,2050))
+    data_tr.interpolate(1)
+    return data_tr
 
-st_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/220_tar/'
+def select_reverb_times(data_tr):
+    fig,ax = plt.subplots(figsize=(20,5))
+    t = np.linspace(0,data_tr.stats.endtime-data_tr.stats.starttime,
+                    num=data_tr.stats.npts)
 
-dir_list = listdir(st_dir)
-
-
-for d in dir_list:
-    fig,ax = plt.subplots()
-    st = obspy.read(st_dir+d+'/st_T.pk')
-    st.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
-    st.integrate()
-    st.normalize()
-    st = seispy.data.normalize_on_envelope(st)
-    st = seispy.data.align_on_phase(st,phase=['ScSScS'],a_min=False)
-    time_d = find_ttimes(st[12])
-    mtrace = strip_reverb(st[12],time_d)
-    synth_tr = seispy.data.phase_window(mtrace,['ScSScS'],window=(-10,2050))
-    ax.plot(np.roll(synth_tr.data,-5),alpha=0.4)
-    print correlate(data_tr.data,synth_tr.data).max()
-    print d
+    coord_list = []
+    def onclick(event):
+        print('button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+        (event.button, event.x, event.y, event.xdata, event.ydata))
+        coord_list.append(event.xdata)
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
     ax.plot(data_tr.data)
+    ax.set_xlim(t.min(),t.max())
     plt.show()
+
+    true_max = []
+    for ii in coord_list:
+        idx = int(ii)
+        shift = np.argmax(data_tr[idx-15:idx+15])-15
+        max = idx+shift
+        true_max.append(max)
+
+    max1 = true_max[1]-true_max[0]
+    max2 = true_max[3]-true_max[2]
+    max3 = true_max[5]-true_max[4]
+    dphase = (max1+max2+max3)/3.
+    return dphase
+
+
+def find_depth(data_tr,dphase,model):
+    model = TauPyModel(model=model)
+    dp_start = data_tr.stats.sac['evdp']
+    gcarc = data_tr.stats.sac['gcarc']
+
+
+data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+st_ind = 12
+
+data_tr = setup_data(data_dir,st_ind)
+dphase = select_reverb_times(data_tr)
+
+    model = TauPyModel(model='prem_p2.5')
+
+
+
+
+
+
+
+
+
+
+
+
+
 

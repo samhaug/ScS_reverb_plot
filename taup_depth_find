@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from os import listdir
 from scipy.signal import correlate
 from scipy.signal import argrelextrema
+from time import sleep
 
 
 '''
@@ -16,63 +17,6 @@ After you have found the best fit perturbed PREM model that explains
 the traveltimes of ScS_n, use this function to find the best event depth
 to explain depth phase separation.
 '''
-
-def find_ttimes(tr):
-    '''
-    Find the traveltimes of ScS reverberations for the 660
-    '''
-    gcarc = tr.stats.sac['gcarc']
-    evdp = tr.stats.sac['evdp']
-    time_d = {}
-    phase_list = [
-                  'ScSScS',
-                  'sScSScS',
-
-                  'ScSScSScS',
-                  'sScSScSScS',
-
-                  'ScSScSScSScS',
-                  'sScSScSScSScS',
-
-                  'ScSScSScSScSScS',
-                  'sScSScSScSScSScS',
-                 ]
-    arrivals = model.get_travel_times(source_depth_in_km=evdp,
-                                      distance_in_degree=gcarc,
-                                      phase_list = phase_list)
-    for i,j in enumerate(phase_list):
-        time_d[j] = arrivals[i].time
-    return time_d
-
-def strip_reverb(tr,time_d):
-    '''
-    Use a tukey window to mask an axisem
-    trace and only pass the reverberations
-    '''
-    sr = tr.stats.sampling_rate
-    npts = tr.stats.npts
-    masked_trace = tr.copy()
-
-    def make_mask(phase):
-        S = time_d[phase]
-        sS = time_d['s'+phase]
-        diff = int(abs(sS-S))
-        window = (S-5,S+2*diff+38)
-        t = tukey(int((window[1]-window[0])*sr),0.2)
-        start = np.zeros(int(window[0]*sr))
-        end = np.zeros(npts-int(window[1]*sr))
-        mask = np.hstack((start,t,end))
-        if len(mask) > len(tr.data):
-            mask = mask[0:len(mask)-len(tr.data)]
-        if len(mask) < len(tr.data):
-            mask = np.hstack((mask,np.zeros(len(tr.data)-len(mask))))
-        return mask
-
-    m1 = make_mask('ScSScS')
-    m2 = make_mask('ScSScSScS')
-    m3 = make_mask('ScSScSScSScS')
-    masked_trace.data = (m1+m2+m3)*tr.data
-    return masked_trace
 
 def setup_data(data_dir,st_ind):
     st_data = obspy.read(data_dir+'FJ_clean.pk')
@@ -108,23 +52,53 @@ def select_reverb_times(data_tr):
     max1 = true_max[1]-true_max[0]
     max2 = true_max[3]-true_max[2]
     max3 = true_max[5]-true_max[4]
-    dphase = (max1+max2+max3)/3.
-    return dphase
+    dphase = np.mean([max1,max2,max3])
+    err = np.round(np.std([max1,max2,max3]),2)
+    return dphase,err
 
-
-def find_depth(data_tr,dphase,model):
+def find_depth(data_tr,dphase,err,model):
     model = TauPyModel(model=model)
     dp_start = data_tr.stats.sac['evdp']
     gcarc = data_tr.stats.sac['gcarc']
+
+    phase_list = [
+                  'ScSScS',
+                  'sScSScS',
+
+                  'ScSScSScS',
+                  'sScSScSScS',
+
+                  'ScSScSScSScS',
+                  'sScSScSScSScS']
+
+    time = 0
+    print('Measured time separation: {} += {} seconds\n'.format(dphase,err))
+    print('Starting depth: {} km\n'.format(dp_start))
+    print('Starting convergence\n')
+    sleep(6)
+
+    while time > dphase+err or time < dphase-err:
+        arrivals = model.get_travel_times(source_depth_in_km=dp_start,
+                                      distance_in_degree=gcarc,
+                                      phase_list = phase_list)
+        max1 = arrivals[1].time-arrivals[0].time
+        max2 = arrivals[3].time-arrivals[2].time
+        max3 = arrivals[5].time-arrivals[4].time
+        new_time = np.mean([max1,max2,max3])
+        if new_time > dphase+err:
+            dp_start += -1
+        if new_time < dphase-err:
+            dp_start += 1
+        time = new_time
+        print('New depth: {} km, time: {} s'.format(dp_start,time))
 
 
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 st_ind = 12
 
 data_tr = setup_data(data_dir,st_ind)
-dphase = select_reverb_times(data_tr)
-
-    model = TauPyModel(model='prem_p2.5')
+dphase,err = select_reverb_times(data_tr)
+find_depth(data_tr,dphase,err,'prem_p2.5')
 
 
 

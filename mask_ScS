@@ -101,7 +101,6 @@ for d in dir_list:
     synth_tr = seispy.data.phase_window(mtrace,['ScSScS'],window=(-10,2050))
     ax.plot(np.roll(synth_tr.data,-5),alpha=0.4)
     print correlate(data_tr.data,synth_tr.data).max()
-    print d
     ax.plot(data_tr.data)
     plt.show()
 

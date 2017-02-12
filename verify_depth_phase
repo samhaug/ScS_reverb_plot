@@ -30,6 +30,8 @@ def compare_plot(sts,std):
         ax[idx].axes.xaxis.set_ticklabels([])
         ax[idx].axes.yaxis.set_ticklabels([])
         ax[idx].set_ylim(-1,1)
+        #gcdiff = std[idx].stats.sac['gcarc']-sts[idx].stats.sac['gcarc']
+        ax[idx].set_title(sts[idx].stats.station)
         ax[idx].grid()
 
         trs1 = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-50,250))
@@ -50,6 +52,20 @@ def compare_plot(sts,std):
         trd3 = seispy.data.phase_window(std[idx],['ScSScSScSScS'],window=(-50,250))
         trd3.normalize()
 
+        #iroll = 50-np.argmax(trd1.data)
+        #trd1.data = np.roll(trd1.data,iroll)
+        #iroll = 50-np.argmax(trd2.data)
+        #trd2.data = np.roll(trd2.data,iroll)
+        #iroll = 50-np.argmax(trd3.data)
+        #trd3.data = np.roll(trd3.data,iroll)
+
+        iroll = 100-np.argmax(trs1.data)
+        trs1.data = np.roll(trs1.data,iroll)
+        iroll = 100-np.argmax(trs2.data)
+        trs2.data = np.roll(trs2.data,iroll)
+        iroll = 100-np.argmax(trs3.data)
+        trs3.data = np.roll(trs3.data,iroll)
+
         ax[idx].plot(trd1.data/2.,alpha=0.7,color='k')
         ax[idx].plot(trs1.data/2.,alpha=0.7,color='r')
 
@@ -65,7 +81,6 @@ def compare_plot(sts,std):
 sim_list = listdir(sim_dir)
 
 for d in sim_list:
-   print(d)
 
    model = TauPyModel(model='prem')
    model_sim = TauPyModel(model='prem_p2.5')
@@ -88,6 +103,7 @@ for d in sim_list:
    sts = seispy.data.normalize_on_envelope(sts)
    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
                                     a_min=False)
+   print('Current directory: {}'.format(d))
    compare_plot(sts,std)
 
 

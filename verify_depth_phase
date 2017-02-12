@@ -10,13 +10,14 @@ from os import listdir
 from scipy.signal import correlate
 
 '''
-Very similar to mask_ScS. This script is used to verify if a perturbed
-depth/PREM model works.
+Use this script as a tool for checking what source depth best explains
+depth phase separation.
 
-Use this to examine ScS_n+1 - ScS_n travel times.
+Use this to examine ScS_n+1 - ScS_n travel times as a function of source
+depth. Plots ScS_2,ScS_3, and ScS_4 for synthetic and data at each station.
 '''
 
-
+### Change data and simulation here.
 sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/220_tar/src_tar/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
@@ -51,14 +52,6 @@ def compare_plot(sts,std):
 
         trd3 = seispy.data.phase_window(std[idx],['ScSScSScSScS'],window=(-50,250))
         trd3.normalize()
-
-        #iroll = 50-np.argmax(trd1.data)
-        #trd1.data = np.roll(trd1.data,iroll)
-        #iroll = 50-np.argmax(trd2.data)
-        #trd2.data = np.roll(trd2.data,iroll)
-        #iroll = 50-np.argmax(trd3.data)
-        #trd3.data = np.roll(trd3.data,iroll)
-
         iroll = 100-np.argmax(trs1.data)
         trs1.data = np.roll(trs1.data,iroll)
         iroll = 100-np.argmax(trs2.data)

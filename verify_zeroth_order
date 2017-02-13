@@ -34,8 +34,8 @@ std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
 std.interpolate(1)
 
 for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
-    print(d)
-
+    model = 'prem_'+d.split('_')[1]
+    print model
     sts = obspy.read(sim_dir+d+'/st_T.pk')
     sts.sort(['station'])
     sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
@@ -43,7 +43,7 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
     sts.integrate()
     sts.normalize()
     sts = seispy.data.normalize_on_envelope(sts)
-    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,model=)
+    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
     ax[dx].set_title(d)
     ax[dx].set_xlim(-30,2050)
     ax[dx].axes.yaxis.set_ticklabels([])
@@ -63,8 +63,15 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
     mdata = np.mean(data_list,axis=0)
     #msim = np.roll(msim,-1*np.argmax(msim))
     #mdata = np.roll(mdata,-1*np.argmax(mdata))
+    if float(d.split('_')[1]) > 2.1:
+        msim = np.roll(msim,36)
+    if float(d.split('_')[1]) == 2.5:
+        msim = np.roll(msim,30)
+    else:
+        msim = np.roll(msim,-8)
     ax[dx].plot(msim,alpha=0.5,color='r')
     ax[dx].plot(mdata,alpha=1.0,color='k')
+    ax[dx].set_xlim(1850,2050)
 
 #plt.tight_layout()
 plt.show()

@@ -91,7 +91,6 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
     ax[dx].set_title(d)
     ax[dx].set_xlim(-30,2050)
     ax[dx].axes.yaxis.set_ticklabels([])
-    #ax[dx].axes.xaxis.set_ticklabels([])
     ax[dx].grid()
 
     sim_list = []
@@ -102,11 +101,8 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
         trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-30,2050))
         data_list.append(trd.data)
 
-    #roll_num = int(float(d.split('_')[-1])*39-12)
     msim = np.mean(sim_list,axis=0)
     mdata = np.mean(data_list,axis=0)
-    #msim = np.roll(msim,-1*np.argmax(msim))
-    #mdata = np.roll(mdata,-1*np.argmax(mdata))
     if float(d.split('_')[1]) > 2.1:
         msim = np.roll(msim,36)
     if float(d.split('_')[1]) == 2.5:
@@ -118,8 +114,8 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
     ax[dx].set_xlim(-30,2050)
     ax[dx].tick_params(axis='both', which='major', labelsize=3)
 
-plt.tight_layout()
 dragh = DragHandler()
+plt.tight_layout()
 plt.show()
 
 

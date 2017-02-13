@@ -8,6 +8,7 @@ from obspy.taup import TauPyModel
 from matplotlib import pyplot as plt
 from os import listdir
 from scipy.signal import correlate
+from matplotlib import pylab as p
 
 '''
 Use this script as a tool for checking what source depth best explains
@@ -21,19 +22,51 @@ depth. Plots ScS_2,ScS_3, and ScS_4 for synthetic and data at each station.
 sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/220_tar/src_tar/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
-def compare_plot(sts,std):
-    fig,ax = plt.subplots(4,5,figsize=(20,30))
-    ax = ax.reshape(ax.size)
+class DragHandler(object):
+    """ A simple class to handle Drag n Drop.
 
-    for idx,a in enumerate(ax):
-        #ax[idx].axes.get_xaxis().set_ticks([])
-        #ax[idx].axes.get_yaxis().set_ticks([])
-        ax[idx].axes.xaxis.set_ticklabels([])
-        ax[idx].axes.yaxis.set_ticklabels([])
-        ax[idx].set_ylim(-1,1)
-        #gcdiff = std[idx].stats.sac['gcarc']-sts[idx].stats.sac['gcarc']
-        ax[idx].set_title(sts[idx].stats.station)
-        ax[idx].grid()
+    This is a simple example, which works for Text objects only.
+    """
+    def __init__(self, figure=None) :
+        """ Create a new drag handler and connect it to the figure's event system.
+        If the figure handler is not given, the current figure is used instead
+        """
+        if figure is None : figure = p.gcf()
+        # simple attibute to store the dragged text object
+        self.dragged = None
+
+        # Connect events and callbacks
+        figure.canvas.mpl_connect("pick_event", self.on_pick_event)
+        figure.canvas.mpl_connect("button_release_event", self.on_release_event)
+
+    def on_pick_event(self, event):
+        " Store which text object was picked and were the pick event occurs."
+
+        if event.artist.get_label() == 'sim':
+            self.dragged = event.artist
+            self.xdata = event.artist.get_data()[0]
+            self.ydata = event.artist.get_data()[1]
+            self.pick_pos = event.mouseevent.xdata
+        return True
+
+    def on_release_event(self, event):
+        " Update text position and redraw"
+
+        if self.dragged is not None :
+            newx = event.xdata
+            newy = np.roll(self.ydata,int(newx-self.pick_pos))
+            self.dragged.set_data(self.xdata,newy)
+            self.dragged = None
+            p.draw()
+        return True
+
+def compare_plot(sts,std,ax):
+
+    for idx,tr in enumerate(sts):
+        ax.tick_params(axis='both', which='major', labelsize=3)
+        ax.set_ylim(-1,len(sts))
+        ax.set_title(sts[idx].stats.sac['evdp'],size=7)
+        ax.grid()
 
         trs1 = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-50,250))
         trs1.normalize()
@@ -41,39 +74,21 @@ def compare_plot(sts,std):
         trd1 = seispy.data.phase_window(std[idx],['ScSScS'],window=(-50,250))
         trd1.normalize()
 
-        trs2 = seispy.data.phase_window(sts[idx],['ScSScSScS'],window=(-50,250))
-        trs2.normalize()
-
-        trd2 = seispy.data.phase_window(std[idx],['ScSScSScS'],window=(-50,250))
-        trd2.normalize()
-
-        trs3 = seispy.data.phase_window(sts[idx],['ScSScSScSScS'],window=(-50,250))
-        trs3.normalize()
-
-        trd3 = seispy.data.phase_window(std[idx],['ScSScSScSScS'],window=(-50,250))
-        trd3.normalize()
         iroll = 100-np.argmax(trs1.data)
         trs1.data = np.roll(trs1.data,iroll)
-        iroll = 100-np.argmax(trs2.data)
-        trs2.data = np.roll(trs2.data,iroll)
-        iroll = 100-np.argmax(trs3.data)
-        trs3.data = np.roll(trs3.data,iroll)
 
-        ax[idx].plot(trd1.data/2.,alpha=0.7,color='k')
-        ax[idx].plot(trs1.data/2.,alpha=0.7,color='r')
+        ax.plot(idx+trd1.data/2.,alpha=0.7,color='k')
+        ax.plot(idx+trs1.data/2.,alpha=0.7,color='r',
+                picker=True,label='sim',pickradius=15)
 
-        ax[idx].plot(trd2.data/2.,alpha=0.7,color='k')
-        ax[idx].plot(trs2.data/2.,alpha=0.7,color='r')
 
-        ax[idx].plot(trd3.data/2.,alpha=0.7,color='k')
-        ax[idx].plot(trs3.data/2.,alpha=0.7,color='r')
-
-    plt.show()
-
+fig,ax_list = plt.subplots(1,6,figsize=(20,30))
+dragh = DragHandler()
 
 sim_list = listdir(sim_dir)
 
-for d in sim_list:
+for idx,ax in enumerate(ax_list):
+   print idx
 
    model = TauPyModel(model='prem')
    model_sim = TauPyModel(model='prem_p2.5')
@@ -81,7 +96,7 @@ for d in sim_list:
    std = obspy.read(data_dir+'FJ_clean.pk')
    std.sort(['station'])
 
-   sts = obspy.read(sim_dir+d+'/st_T.pk')
+   sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
    sts.sort(['station'])
 
    std.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
@@ -96,8 +111,8 @@ for d in sim_list:
    sts = seispy.data.normalize_on_envelope(sts)
    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
                                     a_min=False)
-   print('Current directory: {}'.format(d))
-   compare_plot(sts,std)
+   compare_plot(sts,std,ax)
 
-
+plt.tight_layout()
+plt.show()
 

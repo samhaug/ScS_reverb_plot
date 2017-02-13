@@ -21,6 +21,10 @@ You can drag the synthetic (red) traces to that the ScS_2 phases are perfectly
 aligned. Then check the alignment of ScS_4 to get the best perturbed PREM model.
 '''
 
+# Adjust sim and data directories here
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/src_3.5/'
+data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+
 class DragHandler(object):
     """ A simple class to handle Drag n Drop.
 
@@ -60,13 +64,6 @@ class DragHandler(object):
             p.draw()
         return True
 
-#model = TauPyModel(model='prem')
-#model_sim = TauPyModel(model='prem_p2.5')
-
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/zeroth_order_perturb/'
-data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
-roll_factor = 0
-
 fig,ax = plt.subplots(5,2,figsize=(20,30))
 ax = ax.reshape(ax.size,order='F')
 
@@ -78,7 +75,8 @@ std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
 std.interpolate(1)
 
 for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
-    model = 'prem_'+d.split('_')[1]
+    #model = 'prem_'+d.split('_')[1]
+    model = 'prem50'
     print model
     sts = obspy.read(sim_dir+d+'/st_T.pk')
     sts.sort(['station'])

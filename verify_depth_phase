@@ -15,11 +15,15 @@ Use this script as a tool for checking what source depth best explains
 depth phase separation.
 
 Use this to examine ScS_n+1 - ScS_n travel times as a function of source
-depth. Plots ScS_2,ScS_3, and ScS_4 for synthetic and data at each station.
+depth.
+
+Drag and drop to align on ScS_2. See how well the depth phase 
+separation matches.
+
 '''
 
 ### Change data and simulation here.
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/220_tar/src_tar/'
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/src_3.5/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
 class DragHandler(object):
@@ -60,12 +64,12 @@ class DragHandler(object):
             p.draw()
         return True
 
-def compare_plot(sts,std,ax):
+def compare_plot(sts,std,ax,title):
 
     for idx,tr in enumerate(sts):
         ax.tick_params(axis='both', which='major', labelsize=3)
         ax.set_ylim(-1,len(sts))
-        ax.set_title(sts[idx].stats.sac['evdp'],size=7)
+        ax.set_title(str(sts[idx].stats.sac['evdp'])+'_'+title,size=7)
         ax.grid()
 
         trs1 = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-50,250))
@@ -111,7 +115,7 @@ for idx,ax in enumerate(ax_list):
    sts = seispy.data.normalize_on_envelope(sts)
    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
                                     a_min=False)
-   compare_plot(sts,std,ax)
+   compare_plot(sts,std,ax,sim_list[idx])
 
 plt.tight_layout()
 plt.show()

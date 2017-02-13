@@ -8,13 +8,57 @@ from obspy.taup import TauPyModel
 from matplotlib import pyplot as plt
 from os import listdir
 from scipy.signal import correlate
+from matplotlib import pylab as p
+from matplotlib.text import Text
 
 '''
 Use this to examine ScS_n+1 - ScS_n travel times.
 This script plots the reverberative intervals for data and synthetic cases.
 Use it to determine which 220km perturbed PREM model satisfies traveltimes
 best.
+
+You can drag the synthetic (red) traces to that the ScS_2 phases are perfectly
+aligned. Then check the alignment of ScS_4 to get the best perturbed PREM model.
 '''
+
+class DragHandler(object):
+    """ A simple class to handle Drag n Drop.
+
+    This is a simple example, which works for Text objects only.
+    """
+    def __init__(self, figure=None) :
+        """ Create a new drag handler and connect it to the figure's event system.
+        If the figure handler is not given, the current figure is used instead
+        """
+
+        if figure is None : figure = p.gcf()
+        # simple attibute to store the dragged text object
+        self.dragged = None
+
+        # Connect events and callbacks
+        figure.canvas.mpl_connect("pick_event", self.on_pick_event)
+        figure.canvas.mpl_connect("button_release_event", self.on_release_event)
+
+    def on_pick_event(self, event):
+        " Store which text object was picked and were the pick event occurs."
+
+        if event.artist.get_label() == 'sim':
+            self.dragged = event.artist
+            self.xdata = event.artist.get_data()[0]
+            self.ydata = event.artist.get_data()[1]
+            self.pick_pos = event.mouseevent.xdata
+        return True
+
+    def on_release_event(self, event):
+        " Update text position and redraw"
+
+        if self.dragged is not None :
+            newx = event.xdata
+            newy = np.roll(self.ydata,int(newx-self.pick_pos))
+            self.dragged.set_data(self.xdata,newy)
+            self.dragged = None
+            p.draw()
+        return True
 
 #model = TauPyModel(model='prem')
 #model_sim = TauPyModel(model='prem_p2.5')
@@ -58,7 +102,7 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
         trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-30,2050))
         data_list.append(trd.data)
 
-    roll_num = int(float(d.split('_')[-1])*39-12)
+    #roll_num = int(float(d.split('_')[-1])*39-12)
     msim = np.mean(sim_list,axis=0)
     mdata = np.mean(data_list,axis=0)
     #msim = np.roll(msim,-1*np.argmax(msim))
@@ -69,11 +113,13 @@ for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
         msim = np.roll(msim,30)
     else:
         msim = np.roll(msim,-8)
-    ax[dx].plot(msim,alpha=0.5,color='r')
-    ax[dx].plot(mdata,alpha=1.0,color='k')
-    ax[dx].set_xlim(1850,2050)
+    sim = ax[dx].plot(msim,alpha=0.5,color='r',picker=True,label='sim',pickradius=10)
+    ax[dx].plot(mdata,alpha=1.0,color='k',picker=True)
+    ax[dx].set_xlim(-30,2050)
+    ax[dx].tick_params(axis='both', which='major', labelsize=3)
 
-#plt.tight_layout()
+plt.tight_layout()
+dragh = DragHandler()
 plt.show()
 
 

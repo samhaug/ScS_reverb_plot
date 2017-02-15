@@ -1,0 +1,135 @@
+#!/home/samhaug/anaconda2/bin/python
+
+import obspy
+import numpy as np
+import seispy
+from scipy.signal import tukey
+from obspy.taup import TauPyModel
+from matplotlib import pyplot as plt
+from os import listdir
+from scipy.signal import correlate
+from matplotlib import pylab as p
+
+'''
+Use this script as a tool for checking what source depth best explains
+depth phase separation.
+
+Use this to examine ScS_n+1 - ScS_n travel times as a function of source
+depth.
+
+Drag and drop to align on ScS_2. See how well the depth phase
+separation matches.
+
+'''
+
+### Change data and simulation here.
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/cmt_tar/'
+data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+
+class DragHandler(object):
+    """ A simple class to handle Drag n Drop.
+
+    This is a simple example, which works for Text objects only.
+    """
+    def __init__(self, figure=None) :
+        """ Create a new drag handler and connect it to the figure's event system.
+        If the figure handler is not given, the current figure is used instead
+        """
+        if figure is None : figure = p.gcf()
+        # simple attibute to store the dragged text object
+        self.dragged = None
+
+        # Connect events and callbacks
+        figure.canvas.mpl_connect("pick_event", self.on_pick_event)
+        figure.canvas.mpl_connect("button_release_event", self.on_release_event)
+
+    def on_pick_event(self, event):
+        " Store which text object was picked and were the pick event occurs."
+
+        if event.artist.get_label() == 'sim':
+            self.dragged = event.artist
+            self.xdata = event.artist.get_data()[0]
+            self.ydata = event.artist.get_data()[1]
+            self.pick_pos = event.mouseevent.xdata
+        return True
+
+    def on_release_event(self, event):
+        " Update text position and redraw"
+
+        if self.dragged is not None :
+            newx = event.xdata
+            newy = np.roll(self.ydata,int(newx-self.pick_pos))
+            self.dragged.set_data(self.xdata,newy)
+            self.dragged = None
+            p.draw()
+        return True
+
+def compare_plot(sts,std,ax):
+
+    for idx,tr in enumerate(sts):
+        ax.tick_params(axis='both', which='major', labelsize=3)
+        ax.set_ylim(-1,len(sts))
+        ax.set_title(str(sts[idx].stats.sac['evdp']),size=7)
+        ax.grid()
+
+        #trs1 = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-10,2050))
+        #trs1.normalize()
+
+        #trd1 = seispy.data.phase_window(std[idx],['ScSScS'],window=(-10,2050))
+        #trd1.normalize()
+
+        #iroll = 100-np.argmax(trs1.data)
+        #trs1.data = np.roll(trs1.data,iroll)
+
+        ax.plot(1.5*idx+std[idx].data,alpha=0.7,color='k')
+        ax.plot(1.5*idx+sts[idx].data,alpha=0.7,color='r',
+                picker=True,label='sim',pickradius=15)
+
+
+fig,ax_list = plt.subplots(1,3,figsize=(20,30))
+
+sim_list = listdir(sim_dir)
+
+std = obspy.read(data_dir+'FJ_clean.pk')
+std.sort(['station'])
+std = std[::2]
+#std.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+std.interpolate(1)
+std = seispy.data.normalize_on_envelope(std)
+std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
+
+for idx,tr in enumerate(std):
+    std[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(-10,2050))
+    std[idx].data += -1*np.mean(std[idx].data)
+    std[idx].data *= 1./std[idx].data.max()
+
+for idx,ax in enumerate(ax_list):
+    print idx
+
+    model = TauPyModel(model='prem')
+    model_sim = TauPyModel(model='prem_p2.5')
+
+    sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
+    sts.sort(['station'])
+    sts = sts[::2]
+    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    sts.interpolate(1)
+    sts.integrate()
+    sts.normalize()
+    sts = seispy.data.normalize_on_envelope(sts)
+    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
+                                     a_min=False)
+    for idx,tr in enumerate(sts):
+        sts[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(-10,2050))
+        sts[idx].stats.starttime = std[idx].stats.starttime
+        sts[idx].stats.sac['gcarc'] = std[idx].stats.sac['gcarc']
+        sts[idx].data += -1*np.mean(sts[idx].data)
+        sts[idx].data *= 1./sts[idx].data.max()
+
+    #seispy.plot.compare_section(std,sts,fig=fig,ax=ax)
+    compare_plot(sts,std,ax)
+
+dragh = DragHandler()
+plt.tight_layout()
+plt.show()
+

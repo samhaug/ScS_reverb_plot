@@ -11,15 +11,8 @@ from scipy.signal import correlate
 from matplotlib import pylab as p
 
 '''
-Use this script as a tool for checking what source depth best explains
-depth phase separation.
-
-Use this to examine ScS_n+1 - ScS_n travel times as a function of source
-depth.
-
-Drag and drop to align on ScS_2. See how well the depth phase
-separation matches.
-
+Use this script as a tool for checking what moment tensor perturbation best
+explains depth phase amplitudes. This script plots each trace separately.
 '''
 
 ### Change data and simulation here.

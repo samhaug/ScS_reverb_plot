@@ -1,0 +1,29 @@
+#!/home/samhaug/anaconda2/bin/python
+
+import seispy
+import obspy
+from sys import argv
+from matplotlib import pyplot as plt
+
+'''
+A quick and easy script for comparing a simulation with data
+'''
+
+std = obspy.read('/home/samhaug/work1/ScS_reverb_data/20160130/FJ_clean.pk')
+std = seispy.data.normalize_on_envelope(std)
+std.interpolate(1)
+
+sts = obspy.read('/home/samhaug/work1/ScS_reverb_sims/mineos/'+argv[1]+'st_T.pk')
+sts.filter('bandpass',freqmin=1/60,freqmax=1/25.)
+sts.integrate()
+sts = seispy.data.normalize_on_envelope(sts)
+sts.interpolate(1)
+
+for idx,tr in enumerate(sts):
+    sts[idx].data = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-10,2050))
+    std[idx].data = seispy.data.phase_window(std[idx],['ScSScS'],window=(-10,2050))
+for idx,tr in enumerate(sts):
+    tr.stats.starttime = std[idx].stats.starttime
+
+seispy.plot.compare_section(std,sts)
+plt.show()

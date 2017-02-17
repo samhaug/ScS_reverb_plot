@@ -15,9 +15,9 @@ def plot_section(st_list,name_list):
         c = np.random.rand(3,1)
         for idx,tr in enumerate(st):
             if idx == 1:
-                ax.plot(t,tr.data+idx,color=c,label=name_list[ist])
+                ax.plot(t,tr.data+idx,color=c,label=name_list[ist],alpha=0.5)
             else:
-                ax.plot(t,tr.data+idx,color=c)
+                ax.plot(t,tr.data+idx,color=c,alpha=0.5)
     ax.legend()
     plt.show()
 
@@ -34,9 +34,9 @@ def prep_station(st):
     return st
 
 
-home_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/cmt_np_pert/'
+home_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/pert_att/'
 stream_dir = listdir(home_dir)
-include_list = [0,90,180]
+include_list = [0,60]
 
 stream_list = []
 for ii in stream_dir:

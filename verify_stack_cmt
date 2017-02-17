@@ -17,7 +17,7 @@ explains depth phase amplitudes. This script plots the data as a stack.
 '''
 
 ### Change data and simulation here.
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/cmt_np_pert/'
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/pert_att/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
 
@@ -34,7 +34,7 @@ fig,ax_list = plt.subplots(5,1,figsize=(20,30))
 
 o_sim_list = listdir(sim_dir)
 o_sim_list.sort()
-include_list = [45,50,60,65,70]
+include_list = [10,20,30,40,60]
 
 sim_list = []
 for ii in o_sim_list:

@@ -6,6 +6,13 @@ from matplotlib import pyplot as plt
 from os import listdir
 import seispy
 
+'''
+Use this as a tool to compare as many synthetic sections as you want.
+'''
+
+home_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/'
+include_list = [0,28,30,32,34]
+
 def plot_section(st_list,name_list):
 
     fig,ax = plt.subplots(figsize=(10,15))
@@ -21,8 +28,8 @@ def plot_section(st_list,name_list):
     ax.legend()
     plt.show()
 
-
 def prep_station(st):
+
     st.filter('bandpass',freqmin=1/60.,freqmax=1/25.)
     st.interpolate(1)
     st = seispy.data.normalize_on_phase(st,phase=['ScSScS'])
@@ -33,14 +40,11 @@ def prep_station(st):
     st.integrate().normalize()
     return st
 
-
-home_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/pert_att/'
 stream_dir = listdir(home_dir)
-include_list = [0,60]
 
 stream_list = []
 for ii in stream_dir:
-    if int(ii.split('_')[1]) in include_list:
+    if int(ii.split('_')[-1][1::]) in include_list:
         stream_list.append(ii)
 
 st_list = []
@@ -52,3 +56,5 @@ for ii in stream_list:
 print st_list
 print stream_list
 plot_section(st_list,stream_list)
+
+

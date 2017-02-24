@@ -11,7 +11,7 @@ Use this as a tool to compare as many synthetic sections as you want.
 '''
 
 home_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/'
-include_list = [0,28,30,32,34]
+include_list = [0,24,26,28,30]
 
 def plot_section(st_list,name_list):
 

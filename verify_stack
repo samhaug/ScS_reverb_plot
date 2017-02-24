@@ -23,7 +23,7 @@ sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
 ### Include these simulations
-include_list = [0,28,30,32,40]
+include_list = [28,20,10,16,0]
 
 def align_data(std):
     tr1 = std[0]

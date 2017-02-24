@@ -77,7 +77,7 @@ std.interpolate(1)
 for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
     #model = 'prem_'+d.split('_')[1]
     model = 'prem50'
-    print model
+    print(model)
     sts = obspy.read(sim_dir+d+'/st_T.pk')
     sts.sort(['station'])
     sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)

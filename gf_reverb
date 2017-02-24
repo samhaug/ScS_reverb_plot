@@ -1,0 +1,37 @@
+#!/home/samhaug/anaconda2/bin/python
+
+import h5py
+import numpy as np
+from subprocess import call
+from matplotlib import pyplot as plt
+
+'''
+Plot greens functions of first order reverberations by reading them
+from an h5 file. The h5 file should be made with reverb_greens_functions in
+ScS_reverb_setup
+'''
+
+# h5 file containing the greens functions
+f = h5py.File('/home/samhaug/work1/ScS_reverb_sims/gf_reverb/FJ_20160130.h5')
+
+fig,ax = plt.subplots(figsize=(7,4))
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['left'].set_visible(False)
+ax.yaxis.set_ticklabels([])
+ax.yaxis.set_ticks([])
+ax.tick_params(axis='both', which='major', labelsize=7)
+ax.xaxis.set_ticks_position('bottom')
+#ax.set_ylim(-1.5,5)
+ax.set_xlim(0,2500)
+ax.set_xlabel('Seconds',size=7)
+
+for idx,ii in enumerate(f.keys()):
+    d = np.hstack((f[ii][...],np.zeros(2500-len(f[ii][...]))))
+    ax.plot(2*idx+d/d.max(),color='k',lw=0.5)
+    ax.text(2300,2*idx+0.5,str(ii)+' km',size=6)
+
+
+plt.tight_layout()
+plt.savefig('gf_reverb.pdf')
+call('evince gf_reverb.pdf',shell=True)

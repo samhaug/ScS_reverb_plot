@@ -4,6 +4,8 @@ import h5py
 import numpy as np
 from subprocess import call
 from matplotlib import pyplot as plt
+import obspy
+import seispy
 
 '''
 Plot greens functions of first order reverberations by reading them
@@ -13,25 +15,81 @@ ScS_reverb_setup
 
 # h5 file containing the greens functions
 f = h5py.File('/home/samhaug/work1/ScS_reverb_sims/gf_reverb/FJ_20160130.h5')
+syn_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/FJ_3.0_h6_d28/'
+data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
-fig,ax = plt.subplots(figsize=(7,4))
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.yaxis.set_ticklabels([])
-ax.yaxis.set_ticks([])
-ax.tick_params(axis='both', which='major', labelsize=7)
-ax.xaxis.set_ticks_position('bottom')
-#ax.set_ylim(-1.5,5)
-ax.set_xlim(0,2500)
-ax.set_xlabel('Seconds',size=7)
+def data_setup(syn_dir):
+    start_time = -400
+    print('data_setup')
+    st_data = obspy.read(data_dir+'FJ_clean.pk')
+    st_data = seispy.data.normalize_on_envelope(st_data,phase=['ScSScS'])
+    for idx,tr in enumerate(st_data):
+        st_data[idx].stats.location = st_data[idx].stats.sac['gcarc']
+        o = tr.stats.sac['o']
+        starttime = tr.stats.starttime
+        st_data[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(start_time,2050))
+        st_data[idx].data += -1*st_data[idx].data.mean()
+    st_data.interpolate(1)
+    st_data = seispy.data.align_on_phase(st_data,phase=['ScSScS'],a_min=False)
+    for idx,tr in enumerate(st_data):
+        st_data[idx].stats.sac['o'] += -1*start_time
+    st_data.sort(['location'])
+    return st_data
 
-for idx,ii in enumerate(f.keys()):
-    d = np.hstack((f[ii][...],np.zeros(2500-len(f[ii][...]))))
-    ax.plot(2*idx+d/d.max(),color='k',lw=0.5)
-    ax.text(2300,2*idx+0.5,str(ii)+' km',size=6)
+def synth_setup(syn_dir,st_data):
+    start_time = -400
+    print('synth_setup')
+    st_syn = obspy.read(syn_dir+'st_T.pk')
+    st_syn.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    st_syn.integrate()
+    st_syn = seispy.data.normalize_on_envelope(st_syn,phase=['ScSScS'])
+    st_syn = seispy.data.align_on_phase(st_syn,phase=['ScSScS'],a_min=False)
+    for idx,tr in enumerate(st_syn):
+        st_syn[idx].stats.location = st_syn[idx].stats.sac['gcarc']
+        st_syn[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(start_time,2050))
+        st_syn[idx].stats.starttime = st_data[idx].stats.starttime
+        st_syn[idx].data += -1*st_syn[idx].data.mean()
+        st_syn[idx].stats.sac['gcarc'] = st_data[idx].stats.sac['gcarc']
+    st_syn.interpolate(1)
+    st_syn = seispy.data.align_on_phase(st_syn,phase=['ScSScS'],a_min=False)
+    for idx,tr in enumerate(st_syn):
+        st_syn[idx].stats.sac['o'] += -1*start_time
+    st_syn.sort(['location'])
+    return st_syn
+
+def plot_gf(f,sts,std):
+    fig,ax = plt.subplots(figsize=(7,4))
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.yaxis.set_ticklabels([])
+    ax.yaxis.set_ticks([])
+    ax.tick_params(axis='both', which='major', labelsize=7)
+    ax.xaxis.set_ticks_position('bottom')
+    #ax.set_ylim(-1.5,5)
+    ax.set_xlim(0,2500)
+    ax.set_xlabel('Seconds',size=7)
+
+    sts.normalize()
+    std.normalize()
+
+    ds = np.hstack((sts[10].data,np.zeros(2500-len(sts[10].data))))
+    dd = np.hstack((std[10].data,np.zeros(2500-len(std[10].data))))
+    ax.plot(ds+2.0,color='k',lw=0.5)
+    ax.plot(dd+0.5,color='k',lw=0.5)
+    ax.text(2300,0.8,'Data',size=6)
+    ax.text(2300,2.3,'Synthetic',size=6)
+    for idx,ii in enumerate(f.keys()):
+        idx+=2.0
+        d = np.hstack((f[ii][...],np.zeros(2500-len(f[ii][...]))))
+        ax.plot(2*idx+d/d.max(),color='k',lw=0.5)
+        ax.text(2300,2*idx+0.3,str(ii)+' km',size=6)
+
+    plt.tight_layout()
+    plt.savefig('gf_reverb.pdf')
+    call('evince gf_reverb.pdf',shell=True)
 
 
-plt.tight_layout()
-plt.savefig('gf_reverb.pdf')
-call('evince gf_reverb.pdf',shell=True)
+std = data_setup(data_dir)
+sts = synth_setup(syn_dir,std)
+plot_gf(f,sts,std)

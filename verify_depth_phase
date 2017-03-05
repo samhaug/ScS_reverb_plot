@@ -17,7 +17,7 @@ depth phase separation.
 Use this to examine ScS_n+1 - ScS_n travel times as a function of source
 depth.
 
-Drag and drop to align on ScS_2. See how well the depth phase 
+Drag and drop to align on ScS_2. See how well the depth phase
 separation matches.
 
 '''
@@ -25,6 +25,14 @@ separation matches.
 ### Change data and simulation here.
 sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+
+amp_list= [0,10,-10,-20,20,6]
+sim_dir_list = listdir(sim_dir)
+new_list = []
+
+for ii in sim_dir_list:
+    if float(ii.split('h')[-1]) in amp_list:
+        new_list.append(ii)
 
 class DragHandler(object):
     """ A simple class to handle Drag n Drop.
@@ -89,7 +97,6 @@ def compare_plot(sts,std,ax,title):
 fig,ax_list = plt.subplots(1,6,figsize=(20,30))
 dragh = DragHandler()
 
-sim_list = listdir(sim_dir)
 
 for idx,ax in enumerate(ax_list):
    print idx
@@ -100,22 +107,19 @@ for idx,ax in enumerate(ax_list):
    std = obspy.read(data_dir+'FJ_clean.pk')
    std.sort(['station'])
 
-   sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
+   sts = obspy.read(sim_dir+new_list[idx]+'/st_T.pk')
    sts.sort(['station'])
 
-   std.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
-   std.interpolate(1)
    std = seispy.data.normalize_on_envelope(std)
    std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
-
-   sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+   sts = obspy.read(sim_dir+new_list[idx]+'/st_T.pk')
+   sts.integrate().detrend().integrate().detrend().integrate().detrend()
    sts.interpolate(1)
-   sts.integrate()
-   sts.normalize()
+   sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.,zerophase=True)
    sts = seispy.data.normalize_on_envelope(sts)
-   sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
-                                    a_min=False)
-   compare_plot(sts,std,ax,sim_list[idx])
+   sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
+
+   compare_plot(sts,std,ax,new_list[idx])
 
 plt.tight_layout()
 plt.show()

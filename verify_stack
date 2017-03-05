@@ -47,12 +47,11 @@ print sim_list
 
 std = obspy.read(data_dir+'FJ_clean.pk')
 std.sort(['station'])
-std.interpolate(1)
 std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
 std = seispy.data.normalize_on_envelope(std)
 
 for idx,tr in enumerate(std):
-    std[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(-10,2050))
+    std[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(-50,2000))
     std[idx].data *= 1./std[idx].data.max()
 
 std = align_data(std)
@@ -68,22 +67,21 @@ t = np.linspace(0,len(mean_data),num=len(mean_data))
 for idx,ax in enumerate(ax_list):
     model = TauPyModel(model='prem')
     model_sim = TauPyModel(model='prem_p2.5')
-    ax.set_xlim(-10,2050)
+    ax.set_xlim(-50,2000)
 
     #ax.fill_between(t,mean_data+std_data,mean_data-std_data,alpha=0.5,color='b')
     ax.plot(t,mean_data,'k')
 
     sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
     sts.sort(['station'])
-    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    sts.integrate().detrend().integrate().detrend().integrate().detrend()
     sts.interpolate(1)
-    sts.integrate()
-    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],
-                                     a_min=False)
+    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.,zerophase=True)
     sts = seispy.data.normalize_on_envelope(sts)
+    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
     sts_stack = []
     for idy,tr in enumerate(sts):
-        sts[idy] = seispy.data.phase_window(tr,['ScSScS'],window=(-10,2050))
+        sts[idy] = seispy.data.phase_window(tr,['ScSScS'],window=(-50,2000))
     sts = align_data(sts)
     for idy,tr in enumerate(sts):
         sts[idy].stats.starttime = std[idy].stats.starttime

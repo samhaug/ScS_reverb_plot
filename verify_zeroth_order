@@ -83,6 +83,7 @@ std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
 
 print new_list
 for dx,d in enumerate(sorted(new_list)):
+    print d
     #model = 'prem_'+d.split('_')[1]
     model = 'prem50'
     print(model)
@@ -93,23 +94,23 @@ for dx,d in enumerate(sorted(new_list)):
     sts = seispy.data.normalize_on_envelope(sts)
     sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
     ax[dx].set_title(d)
-    ax[dx].set_xlim(-100,2100)
+    ax[dx].set_xlim(-50,2000)
     ax[dx].axes.yaxis.set_ticklabels([])
     ax[dx].grid()
 
     sim_list = []
     data_list = []
     for idx, tr in enumerate(sts):
-        trs = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-100,2000))
+        trs = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-50,2000))
         sim_list.append(trs.data)
-        trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-100,2000))
+        trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-50,2000))
         data_list.append(trd.data)
 
     msim = np.mean(sim_list,axis=0)
     mdata = np.mean(data_list,axis=0)
     sim = ax[dx].plot(msim,alpha=0.5,color='r',picker=True,label='sim',pickradius=10)
     ax[dx].plot(mdata,alpha=1.0,color='k',picker=True)
-    ax[dx].set_xlim(-100,2100)
+    ax[dx].set_xlim(-50,2000)
     ax[dx].tick_params(axis='both', which='major', labelsize=3)
 
 dragh = DragHandler()

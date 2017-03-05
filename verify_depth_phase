@@ -23,7 +23,7 @@ separation matches.
 '''
 
 ### Change data and simulation here.
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/src_3.5/'
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
 class DragHandler(object):

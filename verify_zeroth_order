@@ -22,8 +22,17 @@ aligned. Then check the alignment of ScS_4 to get the best perturbed PREM model.
 '''
 
 # Adjust sim and data directories here
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/src_3.5/'
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ/'
 data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+
+amp_list= [0.0,-1.0,1.0,-2.0,2.0,3.0,-3.0]
+sim_dir_list = listdir(sim_dir)
+new_list = []
+
+for ii in sim_dir_list:
+    if float(ii.split('_')[-1]) in amp_list:
+        new_list.append(ii)
+
 
 class DragHandler(object):
     """ A simple class to handle Drag n Drop.
@@ -69,47 +78,38 @@ ax = ax.reshape(ax.size,order='F')
 
 std = obspy.read(data_dir+'FJ_clean.pk')
 std.sort(['station'])
-std.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
 std = seispy.data.normalize_on_envelope(std)
 std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
-std.interpolate(1)
 
-for dx,d in enumerate(sorted(listdir(sim_dir)[0:10])):
+print new_list
+for dx,d in enumerate(sorted(new_list)):
     #model = 'prem_'+d.split('_')[1]
     model = 'prem50'
     print(model)
     sts = obspy.read(sim_dir+d+'/st_T.pk')
-    sts.sort(['station'])
-    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.)
+    sts.integrate().detrend().integrate().detrend().integrate().detrend()
     sts.interpolate(1)
-    sts.integrate()
-    sts.normalize()
+    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.,zerophase=True)
     sts = seispy.data.normalize_on_envelope(sts)
     sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
     ax[dx].set_title(d)
-    ax[dx].set_xlim(-30,2050)
+    ax[dx].set_xlim(-100,2100)
     ax[dx].axes.yaxis.set_ticklabels([])
     ax[dx].grid()
 
     sim_list = []
     data_list = []
     for idx, tr in enumerate(sts):
-        trs = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-30,2050))
+        trs = seispy.data.phase_window(sts[idx],['ScSScS'],window=(-100,2000))
         sim_list.append(trs.data)
-        trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-30,2050))
+        trd = seispy.data.phase_window(std[idx],['ScSScS'],window=(-100,2000))
         data_list.append(trd.data)
 
     msim = np.mean(sim_list,axis=0)
     mdata = np.mean(data_list,axis=0)
-    if float(d.split('_')[1]) > 2.1:
-        msim = np.roll(msim,36)
-    if float(d.split('_')[1]) == 2.5:
-        msim = np.roll(msim,30)
-    else:
-        msim = np.roll(msim,-8)
     sim = ax[dx].plot(msim,alpha=0.5,color='r',picker=True,label='sim',pickradius=10)
     ax[dx].plot(mdata,alpha=1.0,color='k',picker=True)
-    ax[dx].set_xlim(-30,2050)
+    ax[dx].set_xlim(-100,2100)
     ax[dx].tick_params(axis='both', which='major', labelsize=3)
 
 dragh = DragHandler()

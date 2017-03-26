@@ -6,7 +6,7 @@
 File Name : reflectivity_profile.py
 Purpose : plot reflectivity profile from saved ascii made by long_migrate.py
 Creation Date : 23-03-2017
-Last Modified : Thu 23 Mar 2017 04:56:40 PM EDT
+Last Modified : Thu 23 Mar 2017 05:21:44 PM EDT
 Created By : Samuel M. Haugland
 
 ==============================================================================
@@ -24,13 +24,13 @@ def main():
     ax.plot(gaussian_filter(reflect[:,0],1),reflect[:,1],color='k',lw=1.0)
 
     ax.set_ylim(reflect[:,1].max(),reflect[:,1].min())
-    ax.set_xlim(reflect[:,0].min()-np.std(reflect[:,0]),reflect[:,0].max()+np.std(reflect[:,0]))
+    ax.set_xlim(-1*reflect[:,0].max()-np.std(reflect[:,0]),reflect[:,0].max()+np.std(reflect[:,0]))
     ax.axhline(670,color='k',alpha=0.5,lw=0.5)
     ax.axhline(400,color='k',alpha=0.5,lw=0.5)
     ax.axhline(220,color='k',alpha=0.5,lw=0.5)
-    ax.text(reflect[:,0].min(),200,"\'220\'",size=7)
-    ax.text(reflect[:,0].min(),390,"\'400\'",size=7)
-    ax.text(reflect[:,0].min(),650,"\'670\'",size=7)
+    ax.text(reflect[:,0].min(),200,"\'220\'",size=5)
+    ax.text(reflect[:,0].min(),390,"\'400\'",size=5)
+    ax.text(reflect[:,0].min(),650,"\'670\'",size=5)
 
     ax.tick_params(axis='both', which='major', labelsize=7)
     ax.xaxis.set_ticks_position('bottom')

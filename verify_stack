@@ -18,84 +18,88 @@ group of strings is a number that is checked for. This script plots data traces
 stacked on max correlation.
 '''
 
-### Change data and simulation here.
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/'
-data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
 
-### Include these simulations
-include_list = [28,20,10,16,0]
 
-def align_data(std):
+
+def main():
+    ### Change data and simulation here.
+    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
+    data_dir = '/home/samhaug/work1/ScS_reverb_data/081412_japan/'
+    ### Include these simulations
+    include_list = [1.0,2.0,3.0,4.0,5.0]
+
+    fig,ax_list = plt.subplots(5,1,figsize=(20,30))
+    sim_list = remove_list(include_list,sim_dir)
+    print sim_list
+
+    std = setup_data(data_dir)
+    data = stack_data(std)
+
+    for ii in range(5):
+        st = setup_sim(sim_dir+sim_list[ii]+'/')
+        sim = stack_sim(st)
+        plot_compare(ax_list[ii],data,sim,sim_list[ii])
+
+    dragh = seispy.draghandler.DragHandler()
+    plt.tight_layout()
+    plt.show()
+
+def remove_list(include_list,sim_dir):
+    o_sim_list = listdir(sim_dir)
+    o_sim_list.sort()
+    sim_list = []
+    for ii in o_sim_list:
+        if float(ii.split('_')[-1]) in include_list:
+            sim_list.append(ii)
+    return sim_list
+
+def setup_data(data_dir):
+    st = obspy.read(data_dir+'st_T.pk')
+    st.integrate().detrend()
+    st.interpolate(1)
+    st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
+    st.sort(['station'])
+    st = seispy.filter.range_filter(st,(10,90))
+    for idx,tr in enumerate(st):
+        st[idx] = seispy.data.phase_window(tr,phase=['ScSScS'],window=(-400,2200))
+    return st
+
+def setup_sim(sim_dir):
+    st = obspy.read(sim_dir+'st_T.pk')
+    st.integrate().detrend().integrate().detrend()
+    st.interpolate(1)
+    st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
+    st.sort(['station'])
+    st = seispy.filter.range_filter(st,(10,90))
+    for idx,tr in enumerate(st):
+        st[idx] = seispy.data.phase_window(tr,phase=['ScSScS'],window=(-400,2200))
+    return st
+
+def stack_sim(sts):
+    sim = []
+    for tr in sts:
+        sim.append(tr.data)
+    return np.mean(sim,axis=0)
+
+def stack_data(std):
     tr1 = std[0]
+    data = []
     for idx,tr in enumerate(std[1::]):
         corr = scipy.signal.correlate(tr1.data,tr.data,mode='same')
         shift = np.argmax(corr)-int(len(tr.data)/2.)
         std[idx].data = np.roll(tr,shift)
-    return std
+    for tr in std:
+        data.append(tr.data)
+    return np.mean(data,axis=0)
+
+def plot_compare(ax,data,sim,name):
+    t = np.linspace(-400,2200,num=len(data))
+    ax.text(0,1,name)
+    ax.plot(t,sim,color='r',alpha=0.5,label='sim',pickradius=40,picker=True)
+    ax.plot(t,data,color='k')
+
+main()
 
 
-fig,ax_list = plt.subplots(5,1,figsize=(20,30))
 
-o_sim_list = listdir(sim_dir)
-o_sim_list.sort()
 
-sim_list = []
-for ii in o_sim_list:
-    if float(ii.split('_')[-1][1::]) in include_list:
-        sim_list.append(ii)
-print sim_list
-
-std = obspy.read(data_dir+'FJ_clean.pk')
-std.sort(['station'])
-std = seispy.data.align_on_phase(std,phase=['ScSScS'],a_min=False)
-std = seispy.data.normalize_on_envelope(std)
-
-for idx,tr in enumerate(std):
-    std[idx] = seispy.data.phase_window(tr,['ScSScS'],window=(-50,2000))
-    std[idx].data *= 1./std[idx].data.max()
-
-std = align_data(std)
-std_stack = []
-
-for tr in std:
-    std_stack.append(tr.data)
-
-mean_data = np.mean(std_stack,axis=0)
-std_data = np.std(std_stack,axis=0)
-t = np.linspace(0,len(mean_data),num=len(mean_data))
-
-for idx,ax in enumerate(ax_list):
-    model = TauPyModel(model='prem')
-    model_sim = TauPyModel(model='prem_p2.5')
-    ax.set_xlim(-50,2000)
-
-    #ax.fill_between(t,mean_data+std_data,mean_data-std_data,alpha=0.5,color='b')
-    ax.plot(t,mean_data,'k')
-
-    sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
-    sts.sort(['station'])
-    sts.integrate().detrend().integrate().detrend().integrate().detrend()
-    sts.interpolate(1)
-    sts.filter('bandpass',freqmax=1/25.,freqmin=1/60.,zerophase=True)
-    sts = seispy.data.normalize_on_envelope(sts)
-    sts = seispy.data.align_on_phase(sts,phase=['ScSScS'],a_min=False,in_model=model)
-    sts_stack = []
-    for idy,tr in enumerate(sts):
-        sts[idy] = seispy.data.phase_window(tr,['ScSScS'],window=(-50,2000))
-    sts = align_data(sts)
-    for idy,tr in enumerate(sts):
-        sts[idy].stats.starttime = std[idy].stats.starttime
-        sts[idy].stats.sac['gcarc'] = std[idy].stats.sac['gcarc']
-        sts[idy].normalize()
-        sts_stack.append(sts[idy].data)
-    mean_synth = np.mean(sts_stack,axis=0)
-    ax.plot(t,mean_synth,color='r',alpha=0.5,label='sim',pickradius=40,picker=True)
-    ax.text(500,0.5,sim_list[idx])
-
-dragh = seispy.draghandler.DragHandler()
-plt.tight_layout()
-plt.show()
-
-#for idx,ii in enumerate(sts_stack):
-#    plt.plot(ii+idx,color='k')
-#plt.show()

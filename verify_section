@@ -17,8 +17,8 @@ group of strings is a number that is checked for
 '''
 
 ### Change data and simulation here.
-sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/FJ_v3.0_h6/'
-data_dir = '/home/samhaug/work1/ScS_reverb_data/20160130/'
+sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
+data_dir = '/home/samhaug/work1/ScS_reverb_data/081412_japan/'
 
 ### Include these simulations
 include_list = [28,30]
@@ -46,7 +46,7 @@ for ii in osim_list:
         sim_list.append(ii)
 
 print sim_list
-std = obspy.read(data_dir+'FJ_clean.pk')
+std = obspy.read(data_dir+'st_T.pk')
 std.sort(['station'])
 std = std[::2]
 std.interpolate(1)
@@ -57,9 +57,8 @@ for idx,tr in enumerate(std):
     std[idx].data *= 1./std[idx].data.max()
 
 for idx,ax in enumerate(ax_list):
-
     model = TauPyModel(model='prem')
-    model_sim = TauPyModel(model='prem_p2.5')
+    model_sim = TauPyModel(model='prem')
 
     sts = obspy.read(sim_dir+sim_list[idx]+'/st_T.pk')
     sts.sort(['station'])

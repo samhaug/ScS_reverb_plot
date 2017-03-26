@@ -18,9 +18,6 @@ group of strings is a number that is checked for. This script plots data traces
 stacked on max correlation.
 '''
 
-
-
-
 def main():
     ### Change data and simulation here.
     sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
@@ -35,8 +32,10 @@ def main():
     std = setup_data(data_dir)
     data = stack_data(std)
 
+    print len(std)
     for ii in range(5):
         st = setup_sim(sim_dir+sim_list[ii]+'/')
+        print len(st)
         sim = stack_sim(st)
         plot_compare(ax_list[ii],data,sim,sim_list[ii])
 

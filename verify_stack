@@ -23,7 +23,7 @@ def main():
     sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
     data_dir = '/home/samhaug/work1/ScS_reverb_data/081412_japan/'
     ### Include these simulations
-    include_list = [1.0,2.0,3.0,4.0,5.0]
+    include_list = [5.0,6.0,7.0,8.0,9.0]
 
     fig,ax_list = plt.subplots(5,1,figsize=(20,30))
     sim_list = remove_list(include_list,sim_dir)
@@ -56,7 +56,7 @@ def setup_data(data_dir):
     st = obspy.read(data_dir+'st_T.pk')
     st.integrate().detrend()
     st.interpolate(1)
-    st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
+    st.filter('bandpass',freqmin=1/80.,freqmax=1/10.,zerophase=True)
     st.sort(['station'])
     st = seispy.filter.range_filter(st,(10,90))
     for idx,tr in enumerate(st):

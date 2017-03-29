@@ -20,9 +20,10 @@ stacked on max correlation.
 
 def main():
     ### Change data and simulation here.
-    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
+    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_v9.0/'
     data_dir = '/home/samhaug/work1/ScS_reverb_data/081412_japan/'
-    run = 'jap_5.0/'
+
+    run = 'japan_9.0_h10/'
 
 
     std = setup_data(data_dir)

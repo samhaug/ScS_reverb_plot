@@ -20,10 +20,10 @@ stacked on max correlation.
 
 def main():
     ### Change data and simulation here.
-    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/japan_vel/'
-    data_dir = '/home/samhaug/work1/ScS_reverb_data/081412_japan/'
+    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/PREM_RUNS/prem_japan_100113/'
+    data_dir = '/home/samhaug/work1/ScS_reverb_data/013016_japan/'
     ### Include these simulations
-    include_list = [5.0,6.0,7.0,8.0,9.0]
+    include_list = [0,4.0,5.0,9.0,12.0]
 
     fig,ax_list = plt.subplots(5,1,figsize=(20,30))
     sim_list = remove_list(include_list,sim_dir)
@@ -53,7 +53,7 @@ def remove_list(include_list,sim_dir):
     return sim_list
 
 def setup_data(data_dir):
-    st = obspy.read(data_dir+'st_T.pk')
+    st = obspy.read(data_dir+'st_T_raw_clean.pk')
     st.integrate().detrend()
     st.interpolate(1)
     st.filter('bandpass',freqmin=1/80.,freqmax=1/10.,zerophase=True)
@@ -61,17 +61,19 @@ def setup_data(data_dir):
     st = seispy.filter.range_filter(st,(10,90))
     for idx,tr in enumerate(st):
         st[idx] = seispy.data.phase_window(tr,phase=['ScSScS'],window=(-400,2200))
+    st.normalize()
     return st
 
 def setup_sim(sim_dir):
     st = obspy.read(sim_dir+'st_T.pk')
     st.integrate().detrend().integrate().detrend()
     st.interpolate(1)
-    st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
+    st.filter('bandpass',freqmin=1/80.,freqmax=1/10.,zerophase=True)
     st.sort(['station'])
     st = seispy.filter.range_filter(st,(10,90))
     for idx,tr in enumerate(st):
         st[idx] = seispy.data.phase_window(tr,phase=['ScSScS'],window=(-400,2200))
+    st.normalize()
     return st
 
 def stack_sim(sts):
@@ -93,7 +95,7 @@ def stack_data(std):
 
 def plot_compare(ax,data,sim,name):
     t = np.linspace(-400,2200,num=len(data))
-    ax.text(0,1,name)
+    ax.text(0,data.max()/2.,name)
     ax.plot(t,sim,color='r',alpha=0.5,label='sim',pickradius=40,picker=True)
     ax.plot(t,data,color='k')
 

@@ -23,16 +23,30 @@ def main():
     sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/'
     data_dir = '/home/samhaug/work1/ScS_reverb_data/013016_japan/'
 
-    run = 'PREM_RUNS/prem_013016_japan/'
+    run = 'DEPTH_PERT_RUNS/japan_013016_v12/japan_v12.0_h10/'
 
+    fig,ax = setup_figure()
     std = setup_data(data_dir)
     sts = setup_sim(sim_dir+run)
     for idx, tr in enumerate(std):
         sts[idx].stats.starttime = tr.stats.starttime
 
-    seispy.plot.compare_section(std,sts)
+    d = []
+    s = []
+
+    for idx,tr in enumerate(std):
+        d.append(std[idx].data)
+        s.append(sts[idx].data)
+
+    t = np.linspace(0,std[0].stats.npts/std[0].stats.sampling_rate,num=std[0].stats.npts)
+    ax.plot(t,np.mean(d,axis=0),color='k',alpha=0.5)
+    ax.plot(t,np.mean(s,axis=0),color='r',alpha=0.5)
     plt.tight_layout()
     plt.show()
+
+def setup_figure():
+    fig,ax = plt.subplots(figsize=(23,8))
+    return fig,ax
 
 def setup_data(data_dir):
     st = obspy.read(data_dir+'st_T.pk')

@@ -20,20 +20,19 @@ stacked on max correlation.
 
 def main():
     ### Change data and simulation here.
-    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/'
-    data_dir = '/home/samhaug/work1/ScS_reverb_data/013016_japan/'
+    data_dir = '/home/samhaug/work1/ScS_reverb_data/100113_japan/'
 
-    run = 'DEPTH_PERT_RUNS/japan_013016_v12/japan_v12.0_h10/'
+    #run = 'DEPTH_PERT_RUNS/japan_100113_v9.0/japan_100113_v9.0_h0/'
+   
+    sim_dir = '/home/samhaug/work1/ScS_reverb_sims/mineos/DEPTH_PERT_RUNS/japan_100113_v9.0/japan_100113_v9.0_h0'
 
     fig,ax = setup_figure()
     std = setup_data(data_dir)
-    sts = setup_sim(sim_dir+run)
+    sts = setup_sim(sim_dir)
     for idx, tr in enumerate(std):
         sts[idx].stats.starttime = tr.stats.starttime
-
     d = []
     s = []
-
     for idx,tr in enumerate(std):
         d.append(std[idx].data)
         s.append(sts[idx].data)
@@ -49,7 +48,7 @@ def setup_figure():
     return fig,ax
 
 def setup_data(data_dir):
-    st = obspy.read(data_dir+'st_T.pk')
+    st = obspy.read(data_dir+'st_T_raw_clean.pk')
     st.integrate().detrend()
     st.interpolate(1)
     st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
@@ -62,7 +61,7 @@ def setup_data(data_dir):
     return st
 
 def setup_sim(sim_dir):
-    st = obspy.read(sim_dir+'st_T.pk')
+    st = obspy.read(sim_dir+'/st_T.pk')
     st.integrate().detrend().integrate().detrend()
     st.interpolate(1)
     st.filter('bandpass',freqmin=1/80.,freqmax=1/15.,zerophase=True)
